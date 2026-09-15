@@ -1,56 +1,56 @@
-# Magento 2 Automatic Persisted Queries (APQ) — utrzymywany fork (SISL)
+# Magento 2 Automatic Persisted Queries (APQ) — maintained fork (SISL)
 
-Implementacja **Automatic Persisted Queries** zgodnej z Apollo dla GraphQL w Magento 2.
-Zamiast wysyłać w kółko całe zapytanie GraphQL, klient wysyła tylko jego **skrót SHA-256**;
-pełne zapytanie leci do serwera raz i zostaje zapamiętane. Efekt:
+An Apollo-compatible **Automatic Persisted Queries** implementation for GraphQL in Magento 2.
+Instead of sending the whole GraphQL query over and over, the client sends only its **SHA-256
+hash**; the full query goes to the server once and is remembered. The result:
 
-- **mniejszy payload** żądań GraphQL (front wysyła hash zamiast kilobajtów query),
-- **zapytania przez GET** zamiast POST → dają się cache'ować na CDN / w warstwie brzegowej,
-- mniejszy narzut sieciowy dla frontów headless / PWA (Apollo Client, `apollo-link-persisted-queries`).
+- **smaller GraphQL request payloads** (the frontend sends a hash instead of kilobytes of query),
+- **queries over GET** instead of POST → cacheable on a CDN / at the edge,
+- less network overhead for headless / PWA frontends (Apollo Client, `apollo-link-persisted-queries`).
 
-To **utrzymywany fork** porzuconego `danslo/magento2-module-automatic-persisted-queries`
-(ostatni commit upstream: 2023). Oryginał **nie deklaruje żadnego `require`** w `composer.json`
-(montuje się wszędzie, nietestowany pod nowsze wydania) i **nie zawiera `etc/acl.xml`**, mimo że
-`system.xml` odwołuje się do zasobu `Danslo_Apq::config_apq` — przez co sekcja konfiguracji w
-adminie była praktycznie niedostępna. Fork to naprawia i jest zweryfikowany na **2.4.9 / PHP 8.4**.
+This is a **maintained fork** of the abandoned `danslo/magento2-module-automatic-persisted-queries`
+(last upstream commit: 2023). The original **declares no `require`** in `composer.json` (it mounts
+anywhere, untested against newer releases) and **ships no `etc/acl.xml`**, even though `system.xml`
+references the `Danslo_Apq::config_apq` resource — which left the admin configuration section
+effectively inaccessible. This fork fixes that and is verified on **2.4.9 / PHP 8.4**.
 
-## Co poprawione w forku
-- **Dodany `etc/acl.xml`** z zasobem `Danslo_Apq::config_apq` (pod `Magento_Config::config`) — sekcja *Stores → Configuration → General → Automatic Persisted Queries* jest teraz widoczna i zapisywalna. (realny bug oryginału)
-- **Uzupełniony `composer.json`**: `php: ~8.1.0 || … || ~8.5.0`, `magento/framework: >=103.0.4 <104`, `magento/module-graph-ql: >=100.4.0 <101` (zamiast braku wymagań).
-- Zgodność z Magento 2.4.9 potwierdzona realnym testem pełnego handshake APQ (patrz niżej).
+## What the fork fixes
+- **Added `etc/acl.xml`** with the `Danslo_Apq::config_apq` resource (under `Magento_Config::config`) — the *Stores → Configuration → General → Automatic Persisted Queries* section is now visible and saveable. (a real bug in the original)
+- **Filled in `composer.json`**: `php: ~8.1.0 || … || ~8.5.0`, `magento/framework: >=103.0.4 <104`, `magento/module-graph-ql: >=100.4.0 <101` (instead of no requirements at all).
+- Magento 2.4.9 compatibility confirmed with a real test of the full APQ handshake (see below).
 
-## Zgodność
+## Compatibility
 - Magento **2.4.4 – 2.4.9** (Open Source / Adobe Commerce)
 - PHP **8.1 – 8.4**
 
-## Instalacja
+## Installation
 
 ```bash
 composer require sisl-source/magento2-automatic-persisted-queries
 bin/magento module:enable Danslo_Apq
-bin/magento cache:enable apq         # typ cache dla przechowywanych zapytań
+bin/magento cache:enable apq          # cache type for the persisted queries
 bin/magento setup:upgrade
-bin/magento setup:di:compile   # tryb produkcyjny
+bin/magento setup:di:compile   # production mode
 ```
 
-## Jak działa handshake (Apollo APQ)
-1. Klient wysyła tylko `extensions.persistedQuery.sha256Hash` (bez `query`). Jeśli serwer nie zna hasha → odpowiada błędem `PersistedQueryNotFound`.
-2. Klient ponawia z pełnym `query` **i** hashem. Serwer weryfikuje `sha256(query) == hash`, zapisuje zapytanie w cache `apq` i zwraca dane.
-3. Kolejne żądania z samym hashem trafiają w cache i zwracają dane bez przesyłania query.
+## How the handshake works (Apollo APQ)
+1. The client sends only `extensions.persistedQuery.sha256Hash` (no `query`). If the server does not know the hash → it responds with a `PersistedQueryNotFound` error.
+2. The client retries with the full `query` **and** the hash. The server verifies `sha256(query) == hash`, stores the query in the `apq` cache and returns the data.
+3. Subsequent requests carrying only the hash hit the cache and return data without sending the query.
 
-## Konfiguracja
-**Stores → Configuration → General → Automatic Persisted Queries** — kody HTTP zwracane w
-sytuacjach brzegowych (zgodnie z zachowaniem apollo-server):
+## Configuration
+**Stores → Configuration → General → Automatic Persisted Queries** — the HTTP codes returned in
+edge cases (matching apollo-server behaviour):
 
-| Pole | Domyślnie |
+| Field | Default |
 |------|-----------|
 | HTTP code — query not found (GET) | 400 |
 | HTTP code — query not found (POST) | 500 |
 | HTTP code — invalid SHA (GET) | 400 |
 | HTTP code — invalid SHA (POST) | 500 |
 
-Typ cache **`apq`** (Automatic Persisted Queries) pojawia się w *System → Cache Management* —
-tam też czyścisz zapamiętane zapytania.
+The **`apq`** (Automatic Persisted Queries) cache type appears in *System → Cache Management* —
+that is also where you clear the remembered queries.
 
-## Licencja
-MIT (jak oryginał). Fork utrzymywany przez [SISL](https://sisl.pl).
+## License
+MIT (same as upstream). Fork maintained by [SISL](https://sisl.pl).
