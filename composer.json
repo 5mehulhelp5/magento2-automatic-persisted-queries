@@ -1,5 +1,5 @@
 {
-    "name": "danslo/magento2-module-automatic-persisted-queries",
+    "name": "sisl-source/magento2-automatic-persisted-queries",
     "description": "Apollo-compatible automatic persisted queries, to improve GraphQL network performance.",
     "type": "magento2-module",
     "license": "MIT",
