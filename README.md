@@ -25,16 +25,12 @@ adminie była praktycznie niedostępna. Fork to naprawia i jest zweryfikowany na
 
 ## Instalacja
 
-Paczka istnieje na Packagist, ale wskazuje na porzucony oryginał — dodaj najpierw to
-repozytorium jako źródło VCS, a potem instaluj gałąź `dev-main`:
-
 ```bash
-composer config repositories.sisl-apq vcs https://github.com/SISL-source/magento2-automatic-persisted-queries
-composer require danslo/magento2-module-automatic-persisted-queries:dev-main
+composer require sisl-source/magento2-automatic-persisted-queries
 bin/magento module:enable Danslo_Apq
-bin/magento setup:upgrade
-bin/magento setup:di:compile        # tryb produkcyjny
 bin/magento cache:enable apq         # typ cache dla przechowywanych zapytań
+bin/magento setup:upgrade
+bin/magento setup:di:compile   # tryb produkcyjny
 ```
 
 ## Jak działa handshake (Apollo APQ)
